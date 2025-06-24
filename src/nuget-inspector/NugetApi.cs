@@ -169,8 +169,10 @@ public class NugetApi
 
         // cache this null too
         psmr_by_identity[pid] = null;
+        // return null instead of throwing an exception
+        // this allows the code to continue gracefully when working with private repositories
 
-        throw new Exception(error_message);
+        return null;
     }
 
     /// <summary>
@@ -536,7 +538,7 @@ public class NugetApi
             Console.WriteLine($"       Fetching registration for package '{identity}'");
 
         PackageSearchMetadataRegistration? registration = FindPackageVersion(identity);
-        if (registration == null)
+        if (registration == null || registration.CatalogUri == null)
             return download;
 
         var package_catalog_url = registration.CatalogUri.ToString();
@@ -575,18 +577,33 @@ public class NugetApi
         }
         if (catalog_entry != null)
         {
-            string hash = catalog_entry["packageHash"]
-            !.ToString();
-            if (download != null)
+            try
             {
-                download.hash = Convert.ToHexString(Convert.FromBase64String(hash));
-                download.hash_algorithm = catalog_entry["packageHashAlgorithm"]!.ToString();
-                download.size = (int)catalog_entry["packageSize"]!;
+                // Make sure all required properties exist
+                if (catalog_entry["packageHash"] != null &&
+                    catalog_entry["packageHashAlgorithm"] != null &&
+                    catalog_entry["packageSize"] != null)
+                {
+                    string hash = catalog_entry["packageHash"].ToString();
+                    if (download != null && !string.IsNullOrEmpty(hash))
+                    {
+                        download.hash = Convert.ToHexString(Convert.FromBase64String(hash));
+                        download.hash_algorithm = catalog_entry["packageHashAlgorithm"].ToString();
+                        download.size = (int)catalog_entry["packageSize"];
+                    }
+                }
+                
+                if (Config.TRACE_NET)
+                    Console.WriteLine($"        download: {download}");
             }
-            if (Config.TRACE_NET)
-                Console.WriteLine($"        download: {download}");
-            return download;
+            catch (Exception ex)
+            {
+                if (Config.TRACE_NET)
+                    Console.WriteLine($"        failed to process catalog entry data: {ex}");
+                // Continue with what we have even if there was an error
+            }
         }
+        
         return download;
     }
 

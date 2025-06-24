@@ -341,9 +341,15 @@ namespace NugetInspector
                 PackageIdentity pid = GetPackageIdentity();
                 PackageSearchMetadataRegistration? psmr = nugetApi.FindPackageVersion(pid: pid);
 
-                // TODO: need to add an error to errors
+                // If we can't get metadata for the package (common for private repositories),
+                // still try to get the download info and proceed with what we have
                 if (psmr == null)
-                    return;
+                {
+                    if (Config.TRACE)
+                        Console.WriteLine($"Could not find metadata for '{pid}'. This is expected for private repositories.");
+
+                    warnings.Add($"Could not find metadata for '{pid}'. This is expected for private repositories.");
+                }
 
                 // Also fetch download URL and package hash
                 PackageDownload? download = nugetApi.GetPackageDownload(identity: pid, with_details: with_details);
@@ -376,9 +382,11 @@ namespace NugetInspector
         {
             string? synthetic_api_data_url = null;
 
+            // Even if metadata is null (common with private repositories), we can still
+            // construct a basic purl using the name and version we already have
             if (metadata != null)
             {
-                // set the purl
+                // set the purl from metadata
                 string meta_name = metadata.Identity.Id;
                 string meta_version = metadata.Identity.Version.ToString();
                 if (string.IsNullOrWhiteSpace(meta_version))
@@ -441,6 +449,11 @@ namespace NugetInspector
                     repository_homepage_url = metadata.PackageDetailsUrl.ToString();
 
                 synthetic_api_data_url = $"https://api.nuget.org/v3/registration5-gz-semver2/{name_lower}/{version_lower}.json";
+            }
+            else if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(version))
+            {
+                // set the purl from base properties when metadata is null (private repos)
+                purl = $"pkg:nuget/{name}@{version}";
             }
             if (nuspec != null)
             {

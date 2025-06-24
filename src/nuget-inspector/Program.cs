@@ -203,7 +203,17 @@ internal static class Program
                 {
                     Console.WriteLine($"            {dep.name}@{dep.version} with purl: {dep.purl}");
                     if (dep.warnings.Any())
-                        Console.WriteLine("            WARNING: " + string.Join(", ", dep.warnings));
+                    {
+                        // Filter out private repository related warnings as they are expected
+                        var privateRepoWarnings = dep.warnings.Where(w => w.Contains("private repositories"));
+                        var otherWarnings = dep.warnings.Where(w => !w.Contains("private repositories"));
+                        
+                        if (privateRepoWarnings.Any())
+                            Console.WriteLine("            PRIVATE REPOSITORY INFO: " + string.Join(", ", privateRepoWarnings));
+                            
+                        if (otherWarnings.Any())
+                            Console.WriteLine("            WARNING: " + string.Join(", ", otherWarnings));
+                    }
                     if (dep.errors.Any())
                         Console.WriteLine("            ERROR: " + string.Join(", ", dep.errors));
                 }
