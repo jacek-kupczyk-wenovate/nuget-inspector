@@ -25,6 +25,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build a nuget-inspector binary
+        run: ./build.sh
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,13 +44,6 @@ jobs:
       - name: Build a binary wheel and a source tarball
         run: python -m build --sdist --wheel --outdir dist/
 
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Build a binary wheel and a source tarball
-        run: python -m build --sdist --wheel --outdir build/
 
       - name: Upload built archives
         uses: actions/upload-artifact@v4
@@ -50,11 +51,11 @@ jobs:
           name: pypi_archives
           path: dist/*
 
-      - name: Upload built archives
-        uses: actions/upload-artifact@v4
-        with:
-          name: dotnet_binaries
-          path: build/*
+#      - name: Upload built archives
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: dotnet_binaries
+#          path: build/*
 
 
   create-gh-release:
@@ -67,14 +68,14 @@ jobs:
       - name: Download built archives
         uses: actions/download-artifact@v4
         with:
-          name: dotnet_binaries
-          path: build
+          name: pypi_archives
+          path: dist
 
       - name: Create GH release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: build/*
+          files: dist/*
 
 
 #  create-pypi-release:
