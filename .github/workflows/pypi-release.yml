@@ -33,23 +33,23 @@ jobs:
       - name: Build a nuget-inspector binary
         run: ./build.sh
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.9
-
-      - name: Install pypa/build
-        run: python -m pip install build --user
-
-      - name: Build a binary wheel and a source tarball
-        run: python -m build --sdist --wheel --outdir dist/
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: 3.9
+#
+#      - name: Install pypa/build
+#        run: python -m pip install build --user
+#
+#      - name: Build a binary wheel and a source tarball
+#        run: python -m build --sdist --wheel --outdir dist/
 
 
       - name: Upload built archives
         uses: actions/upload-artifact@v4
         with:
           name: pypi_archives
-          path: dist/*
+          path: build/*
 
 #      - name: Upload built archives
 #        uses: actions/upload-artifact@v4
